@@ -7,7 +7,7 @@
   API ENDPOINTS (already implemented on the server):
 
   Base URL:
-    http://portal.almasar101.com/assignment/api
+    https://portal.almasar101.com/assignment/api
 
   1) Add task  (POST)
      add.php?stdid=STUDENT_ID&key=API_KEY
@@ -45,7 +45,6 @@ function setStatus(message, isError = false) {
   statusDiv.style.color = isError ? "#d9363e" : "#666666";
 }
 
-
 /**
  * TODO 1:
  * When the page loads, fetch all existing tasks for this student using:
@@ -57,23 +56,28 @@ function setStatus(message, isError = false) {
  *     and append it to #task-list.
  */
 document.addEventListener("DOMContentLoaded", async function () {
-  setStatus(" loading task ...");
+  setStatus("Loading tasks...");
+
   try {
-    const url = `${API_BASE}/get.php?stdid=${encodeURIComponent(STUDENT_ID)}&key=${encodeURIComponent(API_KEY)}`;
+    const url = `${API_BASE}/get.php?stdid=${encodeURIComponent(
+      STUDENT_ID
+    )}&key=${encodeURIComponent(API_KEY)}`;
+
     const res = await fetch(url);
+    if (!res.ok) throw new Error("Failed to fetch tasks");
+
     const data = await res.json();
 
-    if (data.tasks && data.tasks.length > 0) {
+    if (Array.isArray(data.tasks) && data.tasks.length > 0) {
       data.tasks.forEach(task => appendTaskToList(task));
-      setStatus("Tasks loaded");
+      setStatus("Tasks loaded successfully.");
     } else {
-      setStatus("No tasks found yet");
+      setStatus("No tasks found yet.");
     }
   } catch (err) {
     console.error(err);
-    setStatus("Error loading tasks", true);
+    setStatus("Error loading tasks.", true);
   }
-  // TODO: implement load logic using fetch(...)
 });
 
 /**
@@ -93,14 +97,16 @@ if (form) {
 
     const title = input.value.trim();
     if (!title) {
-      setStatus("Write a task first.", true);
+      setStatus("Please enter a task title.", true);
       return;
     }
 
     setStatus("Adding task...");
 
     try {
-      const url = `${API_BASE}/add.php?stdid=${encodeURIComponent(STUDENT_ID)}&key=${encodeURIComponent(API_KEY)}`;
+      const url = `${API_BASE}/add.php?stdid=${encodeURIComponent(
+        STUDENT_ID
+      )}&key=${encodeURIComponent(API_KEY)}`;
 
       const res = await fetch(url, {
         method: "POST",
@@ -108,21 +114,21 @@ if (form) {
         body: JSON.stringify({ title })
       });
 
+      if (!res.ok) throw new Error("Failed to add task");
+
       const data = await res.json();
 
-      if (data.task) {
+      if (data.success && data.task) {
         appendTaskToList(data.task);
         input.value = "";
-        setStatus("Task added!");
+        setStatus("Task added successfully.");
       } else {
-        setStatus("Error adding task", true);
+        setStatus("Error adding task.", true);
       }
     } catch (err) {
       console.error(err);
-      setStatus("Request failed", true);
+      setStatus("Request failed.", true);
     }
-
-    // TODO: implement add-task logic here
   });
 }
 
@@ -139,7 +145,6 @@ if (form) {
  *   - Attaches a click listener to the delete button.
  *   - Appends the <li> to #task-list.
  */
-
 function appendTaskToList(task) {
   const li = document.createElement("li");
   li.className = "task-item";
@@ -147,34 +152,37 @@ function appendTaskToList(task) {
   const span = document.createElement("span");
   span.textContent = task.title;
 
-  const delBtn = document.createElement("button");
-  delBtn.textContent = "Delete";
-  delBtn.className = "delete-btn";
-  delBtn.style.background = "rgba(182, 6, 6, 1)";
-  delBtn.style.color = "white";
+  const deleteBtn = document.createElement("button");
+  deleteBtn.textContent = "Delete";
+  deleteBtn.className = "delete-btn";
 
-  delBtn.addEventListener("click", function () {
+  deleteBtn.addEventListener("click", function () {
     deleteTask(task.id, li);
   });
 
-  li.append(span, delBtn);
+  li.appendChild(span);
+  li.appendChild(deleteBtn);
   list.appendChild(li);
 }
 
-
-
-
 // Suggested helper (you can modify it or make your own):
 async function deleteTask(id, liElement) {
+  if (!confirm("Delete this task?")) return;
 
+  setStatus("Deleting task...");
 
   try {
-    const url = `${API_BASE}/delete.php?stdid=${encodeURIComponent(STUDENT_ID)}&key=${encodeURIComponent(API_KEY)}&id=${encodeURIComponent(id)}`;
+    const url = `${API_BASE}/delete.php?stdid=${encodeURIComponent(
+      STUDENT_ID
+    )}&key=${encodeURIComponent(API_KEY)}&id=${encodeURIComponent(id)}`;
+
     const res = await fetch(url);
+    if (!res.ok) throw new Error("Failed to delete task");
+
     const data = await res.json();
 
     if (data.success) {
-      liElement.remove(); // حذف المهمة مباشرة
+      liElement.remove();
       setStatus("Task deleted.");
     } else {
       setStatus("Could not delete task.", true);
